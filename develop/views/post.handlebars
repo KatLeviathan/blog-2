@@ -1,0 +1,14 @@
+<article>
+  <h1>{{title}}</h1>
+  <p>Posted by {{user.username}} on {{createdAt}}</p>
+  <p>{{content}}</p>
+</article>
+<section id="comments">
+  {{#each comments}}
+    <p>{{this.user.username}} said: {{this.comment_text}} on {{this.createdAt}}</p>
+  {{/each}}
+</section>
+<form id="comment-form">
+  <textarea name="comment_text" id="comment_text" rows="3" required></textarea>
+  <button type="submit">Submit</button>
+</form>

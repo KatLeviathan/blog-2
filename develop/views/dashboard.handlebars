@@ -1,0 +1,102 @@
+{{> navbar}}
+<main>
+  <h1>Welcome, {{username}}!</h1>
+  <button id="new-post-button">New Post</button>
+  <div id="new-post-popup" class="popup">
+    <div class="popup-content">
+      <span id="close-popup" class="close">&times;</span>
+      <h2>Create New Post</h2>
+      <form id="new-post-form">
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="body">Body</label>
+          <textarea id="body" name="body" required></textarea>
+        </div>
+        <button type="submit">Create Post</button>
+      </form>
+    </div>
+  </div>
+  {{#if posts.length}}
+    {{#each posts}}
+      <article data-id="{{this.id}}">
+        <h2>{{this.title}}</h2>
+        <p>{{this.content}}</p>
+        <p class="timestamp">Posted by {{../username}} on {{formatDate this.createdAt}}</p>
+        <button class="delete-post-button">Delete</button>
+      </article>
+    {{/each}}
+  {{else}}
+    <p>You have not created any posts yet.</p>
+  {{/if}}
+</main>
+
+<script>
+  document.getElementById('new-post-button').addEventListener('click', function() {
+    document.getElementById('new-post-popup').style.display = 'block';
+  });
+
+  document.getElementById('close-popup').addEventListener('click', function() {
+    document.getElementById('new-post-popup').style.display = 'none';
+  });
+
+  document.getElementById('new-post-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const title = document.getElementById('title').value;
+    const body = document.getElementById('body').value;
+
+    const response = await fetch('/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content: body }),
+    });
+
+    if (response.ok) {
+      const newPost = await response.json();
+      const newPostHtml = `
+        <article data-id="${newPost.id}">
+          <h2>${newPost.title}</h2>
+          <p>${newPost.content}</p>
+          <p class="timestamp">Posted by {{username}} on ${new Date(newPost.createdAt).toLocaleString()}</p>
+          <button class="delete-post-button">Delete</button>
+        </article>
+      `;
+      document.querySelector('main').insertAdjacentHTML('beforeend', newPostHtml);
+      document.getElementById('new-post-popup').style.display = 'none';
+      document.getElementById('new-post-form').reset();
+      addDeleteFunctionality();
+    } else {
+      const result = await response.json();
+      alert(result.message);
+    }
+  });
+
+  function addDeleteFunctionality() {
+    const deleteButtons = document.querySelectorAll('.delete-post-button');
+    deleteButtons.forEach(button => {
+      button.removeEventListener('click', handleDelete);
+      button.addEventListener('click', handleDelete);
+    });
+  }
+
+  async function handleDelete(event) {
+    const article = event.target.closest('article');
+    const postId = article.getAttribute('data-id');
+
+    const response = await fetch(`/api/posts/${postId}`, {
+      method: 'DELETE',
+    });
+
+    if (response.ok) {
+      article.remove();
+    } else {
+      const result = await response.json();
+      alert(result.message);
+    }
+  }
+
+  // Initialize delete functionality for existing posts
+  addDeleteFunctionality();
+</script>
